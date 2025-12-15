@@ -1,0 +1,39 @@
+# Compiled class files
+*.class
+target/
+*.jar
+*.war
+*.ear
+
+# Environment
+.env
+.env.local
+*.env
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+
+# Maven
+.mvn/
+mvnw
+mvnw.cmd
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Package Files
+*.zip
+*.tar.gz
+*.rar
+
+# Test files
+test-images/
