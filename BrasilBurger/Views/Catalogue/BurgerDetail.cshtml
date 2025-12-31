@@ -1,0 +1,157 @@
+@model BurgerDetailViewModel
+@{
+    ViewData["Title"] = Model.Burger.Nom;
+}
+
+<div class="container py-5">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Accueil</a></li>
+            <li class="breadcrumb-item"><a asp-action="Index">Catalogue</a></li>
+            <li class="breadcrumb-item active">@Model.Burger.Nom</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <img src="@Model.Burger.ImageUrl" class="img-fluid rounded shadow" alt="@Model.Burger.Nom" style="width: 100%; height: 500px; object-fit: cover;">
+        </div>
+
+        <div class="col-md-6">
+            <h1 class="display-4 fw-bold mb-3">@Model.Burger.Nom</h1>
+            <p class="text-danger display-5 fw-bold mb-4">@Model.Burger.Prix.ToString("N0") FCFA</p>
+
+            <div class="mb-4">
+                <h5 class="fw-bold">Description</h5>
+                <p class="text-muted">@Model.Burger.Description</p>
+            </div>
+
+            @if (Model.ComplementsDisponibles.Any())
+            {
+                <div class="mb-4">
+                    <h5 class="fw-bold mb-3">Ajouter des compléments</h5>
+                    <div class="row" id="complements-container">
+                        @foreach (var complement in Model.ComplementsDisponibles)
+                        {
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check card-complement p-3 border rounded">
+                                    <input class="form-check-input complement-checkbox" type="checkbox" value="@complement.Id" id="complement-@complement.Id" data-prix="@complement.Prix">
+                                    <label class="form-check-label w-100" for="complement-@complement.Id">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span class="fw-bold">@complement.Nom</span>
+                                            <span class="text-danger">+@complement.Prix.ToString("N0") FCFA</span>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            <div class="mb-4">
+                <h5 class="fw-bold">Quantité</h5>
+                <div class="input-group" style="max-width: 150px;">
+                    <button class="btn btn-outline-danger" type="button" id="btn-decrease">-</button>
+                    <input type="number" class="form-control text-center" value="1" min="1" id="quantite" readonly>
+                    <button class="btn btn-outline-danger" type="button" id="btn-increase">+</button>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <h5 class="fw-bold">Prix Total: <span class="text-danger" id="prix-total">@Model.Burger.Prix.ToString("N0")</span> FCFA</h5>
+            </div>
+
+            <div class="d-grid gap-2">
+                <button type="button" class="btn btn-danger btn-lg" id="btn-ajouter-panier">
+                    <i class="fas fa-shopping-cart"></i> Ajouter au panier
+                </button>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.BurgersSimilaires.Any())
+    {
+        <div class="mt-5">
+            <h3 class="fw-bold mb-4">Vous aimerez aussi</h3>
+            <div class="row">
+                @foreach (var burger in Model.BurgersSimilaires)
+                {
+                    <div class="col-md-4 mb-4">
+                        <div class="card product-card h-100 shadow-sm">
+                            <img src="@burger.ImageUrl" class="card-img-top" alt="@burger.Nom" style="height: 200px; object-fit: cover;">
+                            <div class="card-body">
+                                <h5 class="card-title fw-bold">@burger.Nom</h5>
+                                <p class="text-danger fw-bold">@burger.Prix.ToString("N0") FCFA</p>
+                                <a asp-action="BurgerDetail" asp-route-id="@burger.Id" class="btn btn-outline-danger w-100">Voir</a>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            const prixBase = @Model.Burger.Prix;
+            let quantite = 1;
+
+            function calculerTotal() {
+                let total = prixBase * quantite;
+                $('.complement-checkbox:checked').each(function() {
+                    const prixComplement = parseFloat($(this).data('prix'));
+                    total += prixComplement * quantite;
+                });
+                $('#prix-total').text(total.toLocaleString('fr-FR', { minimumFractionDigits: 0 }));
+                return total;
+            }
+
+            $('#btn-increase').click(function() {
+                quantite++;
+                $('#quantite').val(quantite);
+                calculerTotal();
+            });
+
+            $('#btn-decrease').click(function() {
+                if (quantite > 1) {
+                    quantite--;
+                    $('#quantite').val(quantite);
+                    calculerTotal();
+                }
+            });
+
+            $('.complement-checkbox').change(function() {
+                calculerTotal();
+            });
+
+            $('#btn-ajouter-panier').click(function() {
+                const complementIds = [];
+                $('.complement-checkbox:checked').each(function() {
+                    complementIds.push($(this).val());
+                });
+
+                $.ajax({
+                    url: '@Url.Action("AjouterBurger", "Panier")',
+                    type: 'POST',
+                    data: {
+                        burgerId: @Model.Burger.Id,
+                        quantite: quantite,
+                        complementIds: complementIds
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            alert(response.message);
+                            $('#panier-count').text(response.nombreItems);
+                        }
+                    },
+                    error: function() {
+                        alert('Erreur lors de l\'ajout au panier');
+                    }
+                });
+            });
+        });
+    </script>
+}

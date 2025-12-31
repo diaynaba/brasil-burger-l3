@@ -1,0 +1,165 @@
+@model PasserCommandeViewModel
+@{
+    ViewData["Title"] = "Passer Commande";
+}
+
+<div class="container py-5">
+    <h1 class="display-4 fw-bold mb-4"><i class="fas fa-clipboard-check text-danger"></i> Finaliser ma commande</h1>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-body p-4">
+                    <form asp-action="PasserCommande" method="post">
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                        <h4 class="fw-bold mb-4"><i class="fas fa-truck"></i> Mode de livraison</h4>
+
+                        <div class="mb-4">
+                            <div class="form-check mb-3 p-3 border rounded">
+                                <input class="form-check-input" type="radio" name="TypeService" id="surPlace" value="Sur place" asp-for="TypeService">
+                                <label class="form-check-label w-100" for="surPlace">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h5 class="mb-0"><i class="fas fa-utensils text-danger"></i> Sur place</h5>
+                                            <small class="text-muted">Consommer au restaurant</small>
+                                        </div>
+                                        <span class="text-success fw-bold">Gratuit</span>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <div class="form-check mb-3 p-3 border rounded">
+                                <input class="form-check-input" type="radio" name="TypeService" id="aEmporter" value="À emporter" asp-for="TypeService">
+                                <label class="form-check-label w-100" for="aEmporter">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h5 class="mb-0"><i class="fas fa-shopping-bag text-danger"></i> À emporter</h5>
+                                            <small class="text-muted">Récupérer au restaurant</small>
+                                        </div>
+                                        <span class="text-success fw-bold">Gratuit</span>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <div class="form-check mb-3 p-3 border rounded">
+                                <input class="form-check-input" type="radio" name="TypeService" id="livraison" value="Livraison" asp-for="TypeService">
+                                <label class="form-check-label w-100" for="livraison">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h5 class="mb-0"><i class="fas fa-motorcycle text-danger"></i> Livraison</h5>
+                                            <small class="text-muted">Livraison à domicile</small>
+                                        </div>
+                                        <span class="text-warning fw-bold">Variable</span>
+                                    </div>
+                                </label>
+                            </div>
+                            <span asp-validation-for="TypeService" class="text-danger"></span>
+                        </div>
+
+                        <div id="livraison-details" style="display: none;">
+                            <h4 class="fw-bold mb-3"><i class="fas fa-map-marker-alt"></i> Adresse de livraison</h4>
+
+                            <div class="mb-3">
+                                <label asp-for="AdresseLivraison" class="form-label">Adresse complète</label>
+                                <textarea asp-for="AdresseLivraison" class="form-control" rows="3" placeholder="Entrez votre adresse complète"></textarea>
+                                <span asp-validation-for="AdresseLivraison" class="text-danger"></span>
+                            </div>
+
+                            <div class="mb-3">
+                                <label asp-for="ZoneId" class="form-label">Zone de livraison</label>
+                                <select asp-for="ZoneId" class="form-select" id="zone-select">
+                                    <option value="">-- Sélectionnez une zone --</option>
+                                    @foreach (var zone in Model.ZonesDisponibles)
+                                    {
+                                        <option value="@zone.Id" data-prix="@zone.PrixLivraison">
+                                            @zone.Nom - @zone.PrixLivraison.ToString("N0") FCFA
+                                        </option>
+                                    }
+                                </select>
+                                <span asp-validation-for="ZoneId" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label asp-for="Note" class="form-label">Note spéciale (optionnel)</label>
+                            <textarea asp-for="Note" class="form-control" rows="3" placeholder="Instructions particulières, allergies, etc."></textarea>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-danger btn-lg">
+                                <i class="fas fa-arrow-right"></i> Continuer vers le paiement
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card shadow-lg sticky-top" style="top: 20px;">
+                <div class="card-body">
+                    <h4 class="fw-bold mb-4">Résumé de la commande</h4>
+
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Sous-total</span>
+                        <span class="fw-bold">@Model.SousTotal.ToString("N0") FCFA</span>
+                    </div>
+
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Frais de livraison</span>
+                        <span class="fw-bold" id="frais-display">@Model.FraisLivraison.ToString("N0") FCFA</span>
+                    </div>
+
+                    <hr>
+
+                    <div class="d-flex justify-content-between mb-3">
+                        <h5 class="fw-bold">Total</h5>
+                        <h5 class="fw-bold text-danger" id="total-display">@Model.Total.ToString("N0") FCFA</h5>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> Paiement sécurisé par Wave ou Orange Money
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        $(document).ready(function() {
+            const sousTotal = @Model.SousTotal;
+            let fraisLivraison = 0;
+
+            $('input[name="TypeService"]').change(function() {
+                if ($(this).val() === 'Livraison') {
+                    $('#livraison-details').slideDown();
+                } else {
+                    $('#livraison-details').slideUp();
+                    fraisLivraison = 0;
+                    mettreAJourTotal();
+                }
+            });
+
+            $('#zone-select').change(function() {
+                const selectedOption = $(this).find('option:selected');
+                fraisLivraison = parseFloat(selectedOption.data('prix')) || 0;
+                mettreAJourTotal();
+            });
+
+            function mettreAJourTotal() {
+                const total = sousTotal + fraisLivraison;
+                $('#frais-display').text(fraisLivraison.toLocaleString('fr-FR', { minimumFractionDigits: 0 }) + ' FCFA');
+                $('#total-display').text(total.toLocaleString('fr-FR', { minimumFractionDigits: 0 }) + ' FCFA');
+            }
+
+            // Initialize
+            if ($('input[name="TypeService"]:checked').val() === 'Livraison') {
+                $('#livraison-details').show();
+            }
+        });
+    </script>
+}

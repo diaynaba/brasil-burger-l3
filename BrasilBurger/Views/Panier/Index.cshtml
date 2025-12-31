@@ -1,0 +1,210 @@
+@model PanierViewModel
+@{
+    ViewData["Title"] = "Mon Panier";
+}
+
+<div class="container py-5">
+    <h1 class="display-4 fw-bold mb-4"><i class="fas fa-shopping-cart text-danger"></i> Mon Panier</h1>
+
+    @if (Model.Items.Count == 0)
+    {
+        <div class="text-center py-5">
+            <i class="fas fa-shopping-cart fa-5x text-muted mb-4"></i>
+            <h3>Votre panier est vide</h3>
+            <p class="text-muted mb-4">Ajoutez des produits pour commencer</p>
+            <a asp-controller="Catalogue" asp-action="Index" class="btn btn-danger btn-lg">
+                <i class="fas fa-utensils"></i> Voir le catalogue
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            <div class="col-lg-8">
+                @foreach (var item in Model.Items)
+                {
+                    <div class="card mb-3 panier-item" data-item-id="@item.ItemId" data-type="@item.Type">
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-md-2">
+                                    <img src="@item.ImageUrl" class="img-fluid rounded" alt="@item.Nom" style="height: 80px; object-fit: cover;">
+                                </div>
+                                <div class="col-md-4">
+                                    <h5 class="fw-bold mb-1">@item.Nom</h5>
+                                    <span class="badge bg-secondary">@item.Type</span>
+                                    @if (item.Complements.Any())
+                                    {
+                                        <div class="mt-2">
+                                            <small class="text-muted">
+                                                <strong>Compléments:</strong>
+                                                @foreach (var complement in item.Complements)
+                                                {
+                                                    <span class="d-block">• @complement.Nom (+@complement.Prix.ToString("N0") FCFA)</span>
+                                                }
+                                            </small>
+                                        </div>
+                                    }
+                                </div>
+                                <div class="col-md-2">
+                                    <p class="text-danger fw-bold mb-0">@item.PrixUnitaire.ToString("N0") FCFA</p>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="input-group input-group-sm">
+                                        <button class="btn btn-outline-danger btn-decrease" type="button">-</button>
+                                        <input type="number" class="form-control text-center quantite-input" value="@item.Quantite" min="1" readonly>
+                                        <button class="btn btn-outline-danger btn-increase" type="button">+</button>
+                                    </div>
+                                </div>
+                                <div class="col-md-2 text-end">
+                                    <p class="fw-bold mb-2 item-total">@item.PrixTotal.ToString("N0") FCFA</p>
+                                    <button class="btn btn-sm btn-danger btn-supprimer">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <div class="d-flex justify-content-between">
+                    <a asp-controller="Catalogue" asp-action="Index" class="btn btn-outline-danger">
+                        <i class="fas fa-arrow-left"></i> Continuer mes achats
+                    </a>
+                    <button class="btn btn-outline-danger" id="btn-vider-panier">
+                        <i class="fas fa-trash"></i> Vider le panier
+                    </button>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card shadow-lg sticky-top" style="top: 20px;">
+                    <div class="card-body">
+                        <h4 class="fw-bold mb-4">Récapitulatif</h4>
+
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Sous-total</span>
+                            <span class="fw-bold" id="sous-total">@Model.SousTotal.ToString("N0") FCFA</span>
+                        </div>
+
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Frais de livraison</span>
+                            <span class="fw-bold" id="frais-livraison">@Model.FraisLivraison.ToString("N0") FCFA</span>
+                        </div>
+
+                        <hr>
+
+                        <div class="d-flex justify-content-between mb-4">
+                            <h5 class="fw-bold">Total</h5>
+                            <h5 class="fw-bold text-danger" id="total">@Model.Total.ToString("N0") FCFA</h5>
+                        </div>
+
+                        @if (User.Identity.IsAuthenticated)
+                        {
+                            <a asp-controller="Commande" asp-action="PasserCommande" class="btn btn-danger btn-lg w-100">
+                                <i class="fas fa-check"></i> Passer la commande
+                            </a>
+                        }
+                        else
+                        {
+                            <a asp-controller="Auth" asp-action="Login" asp-route-returnUrl="@Url.Action("PasserCommande", "Commande")" class="btn btn-danger btn-lg w-100">
+                                <i class="fas fa-sign-in-alt"></i> Se connecter pour commander
+                            </a>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Augmenter quantité
+            $('.btn-increase').click(function() {
+                const card = $(this).closest('.panier-item');
+                const itemId = card.data('item-id');
+                const type = card.data('type');
+                const input = $(this).siblings('.quantite-input');
+                const newQuantite = parseInt(input.val()) + 1;
+
+                modifierQuantite(itemId, type, newQuantite, card);
+            });
+
+            // Diminuer quantité
+            $('.btn-decrease').click(function() {
+                const card = $(this).closest('.panier-item');
+                const itemId = card.data('item-id');
+                const type = card.data('type');
+                const input = $(this).siblings('.quantite-input');
+                const currentQuantite = parseInt(input.val());
+                
+                if (currentQuantite > 1) {
+                    modifierQuantite(itemId, type, currentQuantite - 1, card);
+                }
+            });
+
+            // Supprimer item
+            $('.btn-supprimer').click(function() {
+                if (confirm('Êtes-vous sûr de vouloir supprimer cet article ?')) {
+                    const card = $(this).closest('.panier-item');
+                    const itemId = card.data('item-id');
+                    const type = card.data('type');
+
+                    $.ajax({
+                        url: '@Url.Action("SupprimerItem", "Panier")',
+                        type: 'POST',
+                        data: { itemId: itemId, type: type },
+                        success: function(response) {
+                            if (response.success) {
+                                card.fadeOut(300, function() {
+                                    $(this).remove();
+                                    mettreAJourTotaux(response);
+                                    
+                                    if ($('.panier-item').length === 0) {
+                                        location.reload();
+                                    }
+                                });
+                            }
+                        }
+                    });
+                }
+            });
+
+            // Vider panier
+            $('#btn-vider-panier').click(function() {
+                if (confirm('Êtes-vous sûr de vouloir vider votre panier ?')) {
+                    $.ajax({
+                        url: '@Url.Action("Vider", "Panier")',
+                        type: 'POST',
+                        success: function(response) {
+                            if (response.success) {
+                                location.reload();
+                            }
+                        }
+                    });
+                }
+            });
+
+            function modifierQuantite(itemId, type, quantite, card) {
+                $.ajax({
+                    url: '@Url.Action("ModifierQuantite", "Panier")',
+                    type: 'POST',
+                    data: { itemId: itemId, type: type, quantite: quantite },
+                    success: function(response) {
+                        if (response.success) {
+                            card.find('.quantite-input').val(quantite);
+                            mettreAJourTotaux(response);
+                        }
+                    }
+                });
+            }
+
+            function mettreAJourTotaux(response) {
+                $('#sous-total').text(response.sousTotal.toLocaleString('fr-FR', { minimumFractionDigits: 0 }) + ' FCFA');
+                $('#total').text(response.total.toLocaleString('fr-FR', { minimumFractionDigits: 0 }) + ' FCFA');
+                $('#panier-count').text(response.nombreItems);
+            }
+        });
+    </script>
+}

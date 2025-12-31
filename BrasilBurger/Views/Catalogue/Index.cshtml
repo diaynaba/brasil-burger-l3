@@ -1,0 +1,200 @@
+@model CatalogueViewModel
+@{
+    ViewData["Title"] = "Catalogue";
+}
+
+<!-- Header Section -->
+<section class="page-header bg-danger text-white py-5">
+    <div class="container">
+        <h1 class="display-4 fw-bold">
+            <i class="fas fa-utensils"></i> Notre Catalogue
+        </h1>
+        <p class="lead">Découvrez tous nos produits délicieux</p>
+    </div>
+</section>
+
+<!-- Filter and Search Section -->
+<section class="py-4 bg-light">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <form asp-action="Index" method="get" class="d-flex">
+                    <input type="text"
+                           name="search"
+                           value="@Model.SearchQuery"
+                           class="form-control me-2"
+                           placeholder="Rechercher un produit..." />
+                    <input type="hidden" name="filter" value="@Model.FilterType" />
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </form>
+            </div>
+
+            <div class="col-md-6 text-md-end mt-3 mt-md-0">
+                <div class="btn-group">
+                    <a asp-action="Index" asp-route-filter="all"
+                       class="btn @(Model.FilterType == "all" ? "btn-danger" : "btn-outline-danger")">
+                        Tout
+                    </a>
+                    <a asp-action="Index" asp-route-filter="burgers"
+                       class="btn @(Model.FilterType == "burgers" ? "btn-danger" : "btn-outline-danger")">
+                        Burgers
+                    </a>
+                    <a asp-action="Index" asp-route-filter="menus"
+                       class="btn @(Model.FilterType == "menus" ? "btn-danger" : "btn-outline-danger")">
+                        Menus
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Products Section -->
+<section class="py-5">
+    <div class="container">
+
+        @* BURGERS *@
+        @if (Model.FilterType == "all" || Model.FilterType == "burgers")
+        {
+            if (Model.Burgers != null && Model.Burgers.Any())
+            {
+                <h2 class="fw-bold mb-4 text-danger">
+                    <i class="fas fa-hamburger"></i> Burgers
+                </h2>
+
+                <div class="row mb-5">
+                    @foreach (var burger in Model.Burgers)
+                    {
+                        <div class="col-md-4 col-lg-3 mb-4">
+                            <div class="card h-100 shadow-sm">
+                                <img src="@burger.ImageUrl"
+                                     class="card-img-top"
+                                     alt="@burger.Nom"
+                                     style="height:200px; object-fit:cover;" />
+
+                                <div class="card-body d-flex flex-column">
+                                    <h5 class="fw-bold">@burger.Nom</h5>
+
+                                    <p class="text-muted small flex-grow-1">
+                                        @{
+                                            var desc = burger.Description ?? "";
+                                            var shortDesc = desc.Length > 80 ? desc.Substring(0, 80) : desc;
+                                        }
+                                        @shortDesc
+                                    </p>
+
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="fw-bold text-danger">
+                                            @burger.Prix.ToString("N0") FCFA
+                                        </span>
+
+                                        <a asp-action="BurgerDetail"
+                                           asp-route-id="@burger.Id"
+                                           class="btn btn-sm btn-danger">
+                                            Voir
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        }
+
+        @* MENUS *@
+        @if (Model.FilterType == "all" || Model.FilterType == "menus")
+        {
+            if (Model.Menus != null && Model.Menus.Any())
+            {
+                <h2 class="fw-bold mb-4 text-danger">
+                    <i class="fas fa-list"></i> Menus
+                </h2>
+
+                <div class="row mb-5">
+                    @foreach (var menu in Model.Menus)
+                    {
+                        <div class="col-md-6 mb-4">
+                            <div class="card h-100 shadow-sm">
+                                <div class="row g-0 h-100">
+                                    <div class="col-md-4">
+                                        <img src="@menu.ImageUrl"
+                                             class="img-fluid h-100"
+                                             style="object-fit:cover;" />
+                                    </div>
+
+                                    <div class="col-md-8">
+                                        <div class="card-body d-flex flex-column h-100">
+                                            <h5 class="fw-bold">@menu.Nom</h5>
+
+                                            <p class="text-muted flex-grow-1">
+                                                @menu.Description
+                                            </p>
+
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <span class="fw-bold text-danger fs-5">
+                                                    @menu.Prix.ToString("N0") FCFA
+                                                </span>
+
+                                                <a asp-action="MenuDetail"
+                                                   asp-route-id="@menu.Id"
+                                                   class="btn btn-danger">
+                                                    Commander
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        }
+
+        @* COMPLEMENTS *@
+        @if (Model.FilterType == "all" && Model.Complements != null && Model.Complements.Any())
+        {
+            <h2 class="fw-bold mb-4 text-danger">
+                <i class="fas fa-plus-circle"></i> Compléments
+            </h2>
+
+            <div class="row">
+                @foreach (var c in Model.Complements)
+                {
+                    <div class="col-md-3 col-lg-2 mb-4">
+                        <div class="card text-center shadow-sm h-100">
+                            <img src="@c.ImageUrl"
+                                 class="card-img-top"
+                                 style="height:150px; object-fit:cover;" />
+
+                            <div class="card-body">
+                                <h6 class="fw-bold">@c.Nom</h6>
+                                <p class="fw-bold text-danger">
+                                    @c.Prix.ToString("N0") FCFA
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+
+        @* AUCUN RESULTAT *@
+        @if (
+            (Model.Burgers == null || !Model.Burgers.Any()) &&
+            (Model.Menus == null || !Model.Menus.Any()) &&
+            (Model.Complements == null || !Model.Complements.Any())
+        )
+        {
+            <div class="text-center py-5">
+                <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                <h4>Aucun produit trouvé</h4>
+                <p class="text-muted">Essayez d'autres critères</p>
+            </div>
+        }
+
+    </div>
+</section>
